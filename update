@@ -1,0 +1,183 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -p curl jq gh -i sh
+# shellcheck shell=bash
+set -eo pipefail
+
+# Script to update the sources.json file with the latest Foundry releases
+# This supports both stable releases and (optionally) nightly builds
+
+# Default to stable if not specified
+RELEASE_TYPE=${1:-stable}
+
+# GitHub API endpoint for releases
+if [[ "$RELEASE_TYPE" == "stable" ]]; then
+  RELEASES_URL="https://api.github.com/repos/foundry-rs/foundry/releases/tags/stable"
+elif [[ "$RELEASE_TYPE" == "nightly" ]]; then
+  # For nightly, we use the tag "nightly"
+  RELEASES_URL="https://api.github.com/repos/foundry-rs/foundry/releases/tags/nightly"
+else
+  echo "Error: Unsupported release type: $RELEASE_TYPE"
+  echo "Supported options: stable, nightly"
+  exit 1
+fi
+
+# Platforms we support
+PLATFORMS=(
+  "aarch64-darwin"
+  "x86_64-darwin"
+  "x86_64-linux"
+)
+
+# Mapping from our platform names to Foundry's archive naming
+get_platform_name() {
+  local platform=$1
+  case "$platform" in
+  "aarch64-darwin") echo "darwin_arm64" ;;
+  "x86_64-darwin") echo "darwin_amd64" ;;
+  "x86_64-linux") echo "linux_amd64" ;;
+  "aarch64-linux") echo "linux_arm64" ;;
+  *) echo "unknown" ;;
+  esac
+}
+
+# Check required tools
+for cmd in curl jq nix-prefetch-url nix-hash gh; do
+  if ! command -v $cmd &>/dev/null; then
+    echo "Error: Required command '$cmd' not found"
+    exit 1
+  fi
+done
+
+# Get release info from GitHub
+echo "Fetching $RELEASE_TYPE release information..."
+RELEASE_INFO=$(curl -s "$RELEASES_URL")
+
+# Get version/tag info
+TAG=$(echo "$RELEASE_INFO" | jq -r '.tag_name')
+if [[ "$TAG" == "null" ]]; then
+  echo "Error: Could not get tag information"
+  exit 1
+fi
+
+echo "Processing $RELEASE_TYPE release: $TAG"
+
+# The base URL for downloading the archives
+BASE_URL="https://github.com/foundry-rs/foundry/releases/download/$TAG"
+
+# Create a temporary file for our updated JSON
+TMP_JSON=$(mktemp)
+
+# Create a temporary directory to hold platform data files
+TMP_DIR=$(mktemp -d)
+
+# Create a temporary directory for verification
+VERIFY_DIR=$(mktemp -d)
+
+# Create JSON objects for each platform
+for platform in "${PLATFORMS[@]}"; do
+  platform_name=$(get_platform_name "$platform")
+  url="$BASE_URL/foundry_${TAG}_${platform_name}.tar.gz"
+  tar_file="$VERIFY_DIR/foundry_${TAG}_${platform_name}.tar.gz"
+
+  echo "Downloading and hashing: $platform..."
+
+  # Download the tar file just once
+  echo "Downloading: $url"
+  curl -L -o "$tar_file" "$url"
+
+  # Compute the hash from the downloaded file
+  echo "Computing hash for $platform..."
+  hash=$(nix-hash --type sha256 --flat --base32 "$tar_file")
+
+  # Extract binaries for verification
+  mkdir -p "$VERIFY_DIR/$platform"
+  tar -xzf "$tar_file" -C "$VERIFY_DIR/$platform"
+
+  # Verify each binary using GitHub attestation
+  echo "Verifying binaries for $platform..."
+  for binary in forge cast anvil chisel; do
+    binary_path="$VERIFY_DIR/$platform/$binary"
+    if [[ -f "$binary_path" ]]; then
+      echo "Verifying $binary..."
+      if ! gh attestation verify --owner foundry-rs "$binary_path"; then
+        echo "Error: Attestation verification failed for $binary on $platform"
+        exit 1
+      fi
+    else
+      echo "Warning: Binary $binary not found in the archive for $platform"
+    fi
+  done
+
+  # Store in temp file
+  jq -n \
+    --arg url "$url" \
+    --arg hash "$hash" \
+    '{ "url": $url, "sha256": $hash }' >"$TMP_DIR/$platform.json"
+done
+
+# Download and hash manpages
+echo "Downloading and hashing: manpages..."
+manpage_url="$BASE_URL/foundry_man_$TAG.tar.gz"
+manpage_file="$VERIFY_DIR/foundry_man_$TAG.tar.gz"
+
+# Download the manpage tar file
+echo "Downloading: $manpage_url"
+curl -L -o "$manpage_file" "$manpage_url"
+
+# Compute the hash from the downloaded file
+echo "Computing hash for manpages..."
+manpage_hash=$(nix-hash --type sha256 --flat --base32 "$manpage_file")
+
+# Build our JSON using jq
+jq -n \
+  --arg version "$RELEASE_TYPE" \
+  --arg tag "$TAG" \
+  --argjson platforms "$(
+    jq -n \
+      --argjson aarch64_darwin "$(cat "$TMP_DIR/aarch64-darwin.json")" \
+      --argjson x86_64_darwin "$(cat "$TMP_DIR/x86_64-darwin.json")" \
+      --argjson x86_64_linux "$(cat "$TMP_DIR/x86_64-linux.json")" \
+      '{
+        "aarch64-darwin": $aarch64_darwin,
+        "x86_64-darwin": $x86_64_darwin,
+        "x86_64-linux": $x86_64_linux
+      }'
+  )" \
+  --argjson manpages "$(
+    jq -n \
+      --arg url "$manpage_url" \
+      --arg hash "$manpage_hash" \
+      '{ "url": $url, "sha256": $hash }'
+  )" \
+  '{
+    ($version): {
+      "version": $version,
+      "tag": $tag,
+      "platforms": $platforms,
+      "manpages": $manpages
+    }
+  }' >"$TMP_JSON"
+
+# Check if we need to merge with existing sources.json or create a new one
+if [[ -f sources.json ]]; then
+  echo "Merging with existing sources.json..."
+
+  # Create a backup of the current sources.json
+  cp sources.json sources.json.bak
+
+  # Merge the new JSON with the existing one
+  jq -s '.[0] * .[1]' sources.json "$TMP_JSON" >sources.json.new
+  mv sources.json.new sources.json
+else
+  echo "Creating new sources.json..."
+  mv "$TMP_JSON" sources.json
+fi
+
+# Clean up
+rm -f "$TMP_JSON"
+rm -rf "$TMP_DIR"
+rm -rf "$VERIFY_DIR"
+
+echo "Update completed successfully!"
+echo "Updated $RELEASE_TYPE to version $TAG in sources.json"
+echo "All binaries were successfully verified with GitHub attestations"
