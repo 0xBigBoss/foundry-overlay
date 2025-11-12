@@ -5,20 +5,20 @@
     "platforms": {
       "aarch64-darwin": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_darwin_arm64.tar.gz",
-        "sha256": "1scfc0wnj1yyzd7ryvfydd2lscywhj7zwfhdr0h0d1k8c06cjqp6"
+        "sha256": "0cff3bh3knpm1cnbbfx0fcv7jmm46nkk94mx8p67fyxs6yjjc7yx"
       },
       "x86_64-darwin": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_darwin_amd64.tar.gz",
-        "sha256": "1bdfy0i4kddgxdzrj2kfawahyhphj2kw0zwv3ai1z4g9wsa6jir6"
+        "sha256": "1v0cldzi6gmxzhfazh93r7l87v25zzbl28vf7vgl1mh0d1smhpch"
       },
       "x86_64-linux": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_linux_amd64.tar.gz",
-        "sha256": "1gpd0vnsw508f4q1vbnxw81dn30zy7ihh2s5ivy8m0fx6kngqfis"
+        "sha256": "0iakzpcg4ars4f7a20nmg86faa9vr7mlhnb7ggps7lrp2a80c2dx"
       }
     },
     "manpages": {
       "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_man_stable.tar.gz",
-      "sha256": "19b409r6gv5ngl4ixnmb9nk0amz2cvql2xljx055cndzhqbdf2nw"
+      "sha256": "1jdajcjzfd7drvhwpr4x2zrdsl27lnkhd7kawb9dxblssnvb6hi7"
     }
   },
   "nightly": {
