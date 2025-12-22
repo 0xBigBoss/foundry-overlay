@@ -13,12 +13,12 @@
       },
       "x86_64-linux": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_linux_amd64.tar.gz",
-        "sha256": "04pwqffd8z967sc58ndxynqwf8rapk71assq939lx3s18akmrxk3"
+        "sha256": "0x2lx5fclvi3lxfa9rhqvjc55s60mqmjfddhpqfazhcmz8q4mccw"
       }
     },
     "manpages": {
       "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_man_stable.tar.gz",
-      "sha256": "0dnisjpcnigvkjj7c3imgd97yqqkl063qnlcncw51rpr6i9l88nq"
+      "sha256": "0x6lff97h8g07wmgz1v9xljhfzsjrmbj0fcf84r0kymsrrw58aj0"
     }
   },
   "nightly": {
