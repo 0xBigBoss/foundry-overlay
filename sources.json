@@ -5,11 +5,11 @@
     "platforms": {
       "aarch64-darwin": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_darwin_arm64.tar.gz",
-        "sha256": "1bc90pfzlmw5ppdf4mk01k93jfpvx7jg235jqxjzdcx15d2qwbjs"
+        "sha256": "18n9zcz5v8xgzjcr6afj9spy7y0fxc21rwqw31jbhiv9gh5ika64"
       },
       "x86_64-darwin": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_darwin_amd64.tar.gz",
-        "sha256": "09bdh20mpmidx3z6v1rffi5i2zn8br8jjsgcr51r5a9wqkih05i1"
+        "sha256": "17g44i4q7la34mg12a6s182m7ak8815yxv6g1x9qa84gw78n9w73"
       },
       "x86_64-linux": {
         "url": "https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_linux_amd64.tar.gz",
