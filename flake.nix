@@ -70,12 +70,12 @@
     // {
       # Overlay that can be imported so you can access the packages
       overlays.default = final: prev: {
-        foundryPackages = outputs.packages.${prev.system};
-        forge = outputs.packages.${prev.system}.forge;
-        cast = outputs.packages.${prev.system}.cast;
-        anvil = outputs.packages.${prev.system}.anvil;
-        chisel = outputs.packages.${prev.system}.chisel;
-        foundry = outputs.packages.${prev.system}.foundry;
+        foundryPackages = outputs.packages.${prev.stdenv.hostPlatform.system};
+        forge = outputs.packages.${prev.stdenv.hostPlatform.system}.forge;
+        cast = outputs.packages.${prev.stdenv.hostPlatform.system}.cast;
+        anvil = outputs.packages.${prev.stdenv.hostPlatform.system}.anvil;
+        chisel = outputs.packages.${prev.stdenv.hostPlatform.system}.chisel;
+        foundry = outputs.packages.${prev.stdenv.hostPlatform.system}.foundry;
       };
 
       templates.init = {
